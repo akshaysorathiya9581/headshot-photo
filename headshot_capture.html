@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Headshot Capture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        /* Camera Section */
+        .camera-section {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .camera-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .camera-title {
+            font-size: 20px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #d4edda;
+            color: #155724;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .status-indicator.not-ready {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-indicator.not-ready .status-dot {
+            background: #ffc107;
+        }
+        
+        .camera-container {
+            position: relative;
+            max-width: 100%;
+            margin: 0 auto 20px;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .camera-container.active {
+            display: block;
+        }
+        
+        #videoElement {
+            width: 100%;
+            max-width: 640px;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        #faceDetectionCanvas {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: none;
+            max-width: 640px;
+            width: 100%;
+        }
+        
+        .face-status {
+            margin: 15px 0;
+            padding: 12px;
+            background: #fff;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 500;
+            min-height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .face-status.detecting {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .face-status.not-detected {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .face-status.loading {
+            background: #e7f3ff;
+            color: #667eea;
+            border: 1px solid #b3d9ff;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-capture {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-capture:hover:not(:disabled) {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .btn-capture:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .btn-retake {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-retake:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-download {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-download:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+        
+        .disclaimer {
+            margin-top: 15px;
+            padding: 10px;
+            background: #e7f3ff;
+            border-radius: 6px;
+            color: #667eea;
+            font-size: 13px;
+            text-align: center;
+        }
+        
+        /* Divider */
+        .divider {
+            text-align: center;
+            margin: 30px 0;
+            position: relative;
+        }
+        
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #ddd;
+        }
+        
+        .divider span {
+            background: white;
+            padding: 0 20px;
+            color: #666;
+            font-weight: 500;
+            position: relative;
+        }
+        
+        /* File Upload Section */
+        .upload-section {
+            margin-bottom: 20px;
+        }
+        
+        .file-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .file-input-label {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .file-input-label:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .file-info {
+            font-size: 14px;
+            color: #666;
+            margin-top: 8px;
+        }
+        
+        /* Preview Section */
+        .preview-section {
+            margin-top: 25px;
+            text-align: center;
+        }
+        
+        .preview-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        
+        .preview-item {
+            text-align: center;
+        }
+        
+        .preview-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .preview-label.cropped {
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        .preview-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            border: 3px solid #667eea;
+            display: none;
+        }
+        
+        .preview-image.show {
+            display: block;
+        }
+        
+        .preview-image.cropped {
+            border-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Professional Headshot *</h1>
+        <p class="subtitle">Take a live capture or upload an existing file.</p>
+        
+        <!-- Camera Capture Section -->
+        <div class="camera-section">
+            <div class="camera-header">
+                <h3 class="camera-title">Capture with Webcam</h3>
+                <div id="statusIndicator" class="status-indicator not-ready">
+                    <span class="status-dot"></span>
+                    <span id="statusText">Camera Not Ready</span>
+                </div>
+            </div>
+            
+            <p style="color: #666; margin-bottom: 15px; font-size: 14px;">
+                Snap a professional headshot without leaving this page.
+            </p>
+            
+            <div id="cameraContainer" class="camera-container">
+                <video id="videoElement" autoplay playsinline></video>
+                <canvas id="faceDetectionCanvas"></canvas>
+            </div>
+            
+            <div id="faceStatus" class="face-status not-detected">
+                <span id="faceStatusText">Camera not started</span>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" id="startCameraBtn" class="btn btn-primary">
+                    📷 Start Camera
+                </button>
+                <button type="button" id="captureBtn" class="btn btn-capture" disabled>
+                    📸 Capture Photo
+                </button>
+                <button type="button" id="retakeBtn" class="btn btn-retake" style="display: none;">
+                    🔄 Retake
+                </button>
+                <button type="button" id="downloadBtn" class="btn btn-download" style="display: none;">
+                    ⬇️ Download
+                </button>
+            </div>
+            
+            <div class="disclaimer">
+                Captured photos never leave your device until you submit.
+            </div>
+        </div>
+        
+        <!-- Divider -->
+        <div class="divider">
+            <span>OR</span>
+        </div>
+        
+        <!-- File Upload Section -->
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <label for="fileInput" class="file-input-label">Choose File</label>
+                <input type="file" id="fileInput" accept="image/jpeg,image/jpg,image/png,image/gif">
+                <span id="fileName" style="color: #666;">No file chosen</span>
+            </div>
+            <div class="file-info">
+                Accepted formats: JPEG, PNG, GIF (Max 5MB)
+            </div>
+        </div>
+        
+        <!-- Preview Section -->
+        <div class="preview-section">
+            <div class="preview-container">
+                <div class="preview-item">
+                    <div class="preview-label">Original</div>
+                    <img id="originalPreview" class="preview-image" alt="Original Preview">
+                </div>
+                <div class="preview-item">
+                    <div class="preview-label cropped">✨ Auto-Cropped</div>
+                    <img id="croppedPreview" class="preview-image cropped" alt="Cropped Preview">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Face Detection Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.7.4/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js" 
+            onerror="console.error('Failed to load face-api.js from primary CDN'); this.onerror=null; this.src='https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js';"></script>
+    
+    <script>
+        // Global variables
+        let cameraStream = null;
+        let faceDetectionInterval = null;
+        let isFaceDetected = false;
+        let faceDetectionCtx = null;
+        let faceApiModelsLoaded = false;
+        let capturedImageData = null;
+        
+        // DOM elements
+        const videoElement = document.getElementById('videoElement');
+        const faceDetectionCanvas = document.getElementById('faceDetectionCanvas');
+        const cameraContainer = document.getElementById('cameraContainer');
+        const startCameraBtn = document.getElementById('startCameraBtn');
+        const captureBtn = document.getElementById('captureBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const faceStatus = document.getElementById('faceStatus');
+        const faceStatusText = document.getElementById('faceStatusText');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const originalPreview = document.getElementById('originalPreview');
+        const croppedPreview = document.getElementById('croppedPreview');
+        
+        // Check if face-api.js is loaded
+        function checkFaceApiLoaded() {
+            if (typeof faceapi === 'undefined') {
+                console.error('face-api.js library not loaded - waiting for library to load...');
+                return false;
+            }
+            if (!faceapi.nets) {
+                console.error('face-api.js nets not available');
+                return false;
+            }
+            if (!faceapi.nets.tinyFaceDetector) {
+                console.error('face-api.js TinyFaceDetector not available');
+                return false;
+            }
+            if (!faceapi.nets.faceLandmark68Net) {
+                console.error('face-api.js FaceLandmark68Net not available');
+                return false;
+            }
+            return true;
+        }
+        
+        // Wait for face-api.js to load with retry
+        async function waitForFaceApi(maxRetries = 10, delay = 500) {
+            for (let i = 0; i < maxRetries; i++) {
+                if (checkFaceApiLoaded()) {
+                    return true;
+                }
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+            return false;
+        }
+        
+        // Load face detection models
+        async function loadFaceApiModels() {
+            if (faceApiModelsLoaded) return true;
+            
+            // Wait for face-api.js library to load
+            if (!checkFaceApiLoaded()) {
+                console.log('Waiting for face-api.js library to load...');
+                const libraryLoaded = await waitForFaceApi();
+                if (!libraryLoaded) {
+                    console.error('face-api.js library failed to load after waiting');
+                    statusText.textContent = 'Face detection library not loaded';
+                    faceStatusText.textContent = '⚠️ Face detection library could not be loaded. Please refresh the page.';
+                    faceStatus.className = 'face-status not-detected';
+                    return false;
+                }
+            }
+            
+            try {
+                statusText.textContent = 'Loading face detection...';
+                statusIndicator.classList.add('not-ready');
+                
+                // Try multiple CDN sources in order of reliability
+                const CDN_URLS = [
+                    'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights',
+                    'https://unpkg.com/face-api.js@0.22.2/weights',
+                    'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights',
+                    './weights'
+                ];
+                
+                const loadModel = async (modelLoader, modelName) => {
+                    let lastError = null;
+                    for (let i = 0; i < CDN_URLS.length; i++) {
+                        try {
+                            console.log(`Trying to load ${modelName} from: ${CDN_URLS[i]}`);
+                            const loadPromise = modelLoader.loadFromUri(CDN_URLS[i]);
+                            const timeoutPromise = new Promise((_, reject) => 
+                                setTimeout(() => reject(new Error('Timeout after 45 seconds')), 45000)
+                            );
+                            await Promise.race([loadPromise, timeoutPromise]);
+                            console.log(`✅ ${modelName} loaded from ${CDN_URLS[i]}`);
+                            return true;
+                        } catch (error) {
+                            console.warn(`Failed to load ${modelName} from ${CDN_URLS[i]}:`, error.message);
+                            lastError = error;
+                            if (i === CDN_URLS.length - 1) {
+                                throw lastError;
+                            }
+                            // Wait a bit before trying next URL
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                        }
+                    }
+                    throw lastError;
+                };
+                
+                // Load models sequentially to avoid overwhelming the network
+                statusText.textContent = 'Loading face detection models (1/2)...';
+                await loadModel(faceapi.nets.tinyFaceDetector, 'TinyFaceDetector');
+                
+                statusText.textContent = 'Loading face detection models (2/2)...';
+                await loadModel(faceapi.nets.faceLandmark68Net, 'FaceLandmark68Net');
+                
+                faceApiModelsLoaded = true;
+                statusText.textContent = 'Photo Ready';
+                statusIndicator.classList.remove('not-ready');
+                console.log('✅ Face detection models loaded successfully');
+                return true;
+            } catch (error) {
+                console.error('Error loading face detection models:', error);
+                statusText.textContent = 'Face detection unavailable - Check console for details';
+                statusIndicator.classList.add('not-ready');
+                
+                // Show helpful error message
+                const errorMsg = error.message || 'Unknown error';
+                if (errorMsg.includes('Timeout')) {
+                    faceStatusText.textContent = '⚠️ Model loading timed out. Please check your internet connection and refresh the page.';
+                } else if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+                    faceStatusText.textContent = '⚠️ Network error loading models. Please check your internet connection.';
+                } else {
+                    faceStatusText.textContent = '⚠️ Face detection models could not be loaded. Please refresh the page.';
+                }
+                faceStatus.className = 'face-status not-detected';
+                
+                return false;
+            }
+        }
+        
+        // Start camera
+        async function startCamera() {
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    alert('Camera access is not supported in your browser.');
+                    return;
+                }
+                
+                await loadFaceApiModels();
+                
+                const constraints = {
+                    video: {
+                        width: { ideal: 1280, min: 640 },
+                        height: { ideal: 720, min: 480 },
+                        facingMode: 'user'
+                    }
+                };
+                
+                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                videoElement.srcObject = cameraStream;
+                cameraContainer.classList.add('active');
+                startCameraBtn.style.display = 'none';
+                retakeBtn.style.display = 'none';
+                downloadBtn.style.display = 'none';
+                
+                videoElement.onloadedmetadata = async () => {
+                    videoElement.play();
+                    
+                    faceDetectionCanvas.width = videoElement.videoWidth;
+                    faceDetectionCanvas.height = videoElement.videoHeight;
+                    faceDetectionCanvas.style.width = videoElement.offsetWidth + 'px';
+                    faceDetectionCanvas.style.height = videoElement.offsetHeight + 'px';
+                    faceDetectionCtx = faceDetectionCanvas.getContext('2d');
+                    
+                    await startFaceDetection();
+                    faceStatus.className = 'face-status detecting';
+                    faceStatusText.textContent = 'Position yourself in front of the camera...';
+                };
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                let errorMessage = 'Unable to access camera. ';
+                if (error.name === 'NotAllowedError') {
+                    errorMessage += 'Please allow camera permissions.';
+                } else if (error.name === 'NotFoundError') {
+                    errorMessage += 'No camera found.';
+                }
+                alert(errorMessage);
+            }
+        }
+        
+        // Stop camera
+        function stopCamera() {
+            stopFaceDetection();
+            
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            
+            videoElement.srcObject = null;
+            cameraContainer.classList.remove('active');
+            captureBtn.disabled = true;
+            isFaceDetected = false;
+        }
+        
+        // Start face detection loop
+        async function startFaceDetection() {
+            // Ensure library is loaded
+            if (!checkFaceApiLoaded()) {
+                const libraryLoaded = await waitForFaceApi();
+                if (!libraryLoaded) {
+                    faceStatus.className = 'face-status not-detected';
+                    faceStatusText.textContent = 'Face detection library not available';
+                    return;
+                }
+            }
+            
+            // Ensure models are loaded
+            if (!faceApiModelsLoaded) {
+                const modelsLoaded = await loadFaceApiModels();
+                if (!modelsLoaded) {
+                    faceStatus.className = 'face-status not-detected';
+                    faceStatusText.textContent = 'Face detection models not available';
+                    return;
+                }
+            }
+            
+            faceDetectionInterval = setInterval(async () => {
+                if (!videoElement || videoElement.readyState !== 4) return;
+                if (!checkFaceApiLoaded() || !faceApiModelsLoaded) return;
+                
+                try {
+                    const detections = await faceapi
+                        .detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions({
+                            inputSize: 320,
+                            scoreThreshold: 0.5
+                        }))
+                        .withFaceLandmarks();
+                    
+                    if (faceDetectionCtx) {
+                        faceDetectionCtx.clearRect(0, 0, faceDetectionCanvas.width, faceDetectionCanvas.height);
+                    }
+                    
+                    if (detections.length === 0) {
+                        isFaceDetected = false;
+                        captureBtn.disabled = true;
+                        faceStatus.className = 'face-status not-detected';
+                        faceStatusText.textContent = '❌ No face detected. Please position yourself in front of the camera.';
+                    } else if (detections.length > 1) {
+                        isFaceDetected = false;
+                        captureBtn.disabled = true;
+                        faceStatus.className = 'face-status not-detected';
+                        faceStatusText.textContent = '⚠️ Multiple faces detected. Please ensure only one person is in frame.';
+                    } else {
+                        const detection = detections[0];
+                        
+                        if (detection.detection.score < 0.5) {
+                            isFaceDetected = false;
+                            captureBtn.disabled = true;
+                            faceStatus.className = 'face-status not-detected';
+                            faceStatusText.textContent = '⚠️ Face detection confidence low. Please improve lighting.';
+                        } else {
+                            isFaceDetected = true;
+                            captureBtn.disabled = false;
+                            faceStatus.className = 'face-status detecting';
+                            faceStatusText.textContent = `✅ Face detected! Confidence: ${(detection.detection.score * 100).toFixed(0)}% - Ready to capture`;
+                            
+                            // Draw face detection box
+                            if (faceDetectionCtx) {
+                                const resizedDetection = faceapi.resizeResults([detection], {
+                                    width: faceDetectionCanvas.width,
+                                    height: faceDetectionCanvas.height
+                                });
+                                
+                                const box = resizedDetection[0].detection.box;
+                                
+                                faceDetectionCtx.strokeStyle = '#28a745';
+                                faceDetectionCtx.lineWidth = 3;
+                                faceDetectionCtx.strokeRect(box.x, box.y, box.width, box.height);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Face detection error:', error);
+                }
+            }, 150);
+        }
+        
+        // Stop face detection
+        function stopFaceDetection() {
+            if (faceDetectionInterval) {
+                clearInterval(faceDetectionInterval);
+                faceDetectionInterval = null;
+            }
+            
+            if (faceDetectionCtx) {
+                faceDetectionCtx.clearRect(0, 0, faceDetectionCanvas.width, faceDetectionCanvas.height);
+            }
+        }
+        
+        // Detect face and crop automatically
+        async function detectAndCropFace(imageDataUri) {
+            // Ensure library is loaded
+            if (!checkFaceApiLoaded()) {
+                const libraryLoaded = await waitForFaceApi();
+                if (!libraryLoaded) {
+                    console.error('face-api.js library not available for face detection');
+                    // Fallback to center crop
+                    const img = new Image();
+                    img.src = imageDataUri;
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                    });
+                    return centerCrop(img);
+                }
+            }
+            
+            // Ensure models are loaded
+            if (!faceApiModelsLoaded) {
+                const modelsLoaded = await loadFaceApiModels();
+                if (!modelsLoaded) {
+                    console.warn('Face detection models not loaded, using center crop fallback');
+                    // Fallback to center crop
+                    const img = new Image();
+                    img.src = imageDataUri;
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                    });
+                    return centerCrop(img);
+                }
+            }
+            
+            try {
+                const img = new Image();
+                img.src = imageDataUri;
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                });
+                
+                // Detect face
+                const detections = await faceapi
+                    .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({
+                        inputSize: 416,
+                        scoreThreshold: 0.5
+                    }))
+                    .withFaceLandmarks();
+                
+                if (!detections || !detections.detection) {
+                    // No face detected - center crop
+                    return centerCrop(img);
+                }
+                
+                const faceBox = detections.detection.box;
+                const faceCenterX = faceBox.x + faceBox.width / 2;
+                const faceCenterY = faceBox.y + faceBox.height / 2;
+                
+                // Calculate crop size with padding
+                const faceSize = Math.max(faceBox.width, faceBox.height);
+                const padding = 1.8; // 80% padding around face
+                const cropSize = Math.min(faceSize * padding, img.width, img.height);
+                
+                // Calculate crop position
+                let cropX = faceCenterX - cropSize / 2;
+                let cropY = faceCenterY - cropSize / 2;
+                
+                // Adjust if out of bounds
+                if (cropX < 0) cropX = 0;
+                if (cropY < 0) cropY = 0;
+                if (cropX + cropSize > img.width) cropX = img.width - cropSize;
+                if (cropY + cropSize > img.height) cropY = img.height - cropSize;
+                
+                // Create cropped canvas
+                const canvas = document.createElement('canvas');
+                const targetSize = 800;
+                canvas.width = targetSize;
+                canvas.height = targetSize;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(
+                    img,
+                    cropX, cropY, cropSize, cropSize,
+                    0, 0, targetSize, targetSize
+                );
+                
+                return canvas.toDataURL('image/jpeg', 0.92);
+            } catch (error) {
+                console.error('Error detecting/cropping face:', error);
+                // Fallback to center crop
+                const img = new Image();
+                img.src = imageDataUri;
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                });
+                return centerCrop(img);
+            }
+        }
+        
+        // Center crop fallback
+        function centerCrop(img) {
+            const cropSize = Math.min(img.width, img.height);
+            const cropX = (img.width - cropSize) / 2;
+            const cropY = (img.height - cropSize) / 2;
+            
+            const canvas = document.createElement('canvas');
+            const targetSize = 800;
+            canvas.width = targetSize;
+            canvas.height = targetSize;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(
+                img,
+                cropX, cropY, cropSize, cropSize,
+                0, 0, targetSize, targetSize
+            );
+            
+            return canvas.toDataURL('image/jpeg', 0.92);
+        }
+        
+        // Capture photo from camera
+        async function capturePhoto() {
+            if (!cameraStream || !videoElement || !isFaceDetected) {
+                alert('Please ensure your face is detected before capturing.');
+                return;
+            }
+            
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = videoElement.videoWidth;
+                canvas.height = videoElement.videoHeight;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(videoElement, 0, 0);
+                
+                const imageDataUri = canvas.toDataURL('image/jpeg', 0.92);
+                capturedImageData = imageDataUri;
+                
+                // Stop camera
+                stopCamera();
+                
+                // Show previews
+                originalPreview.src = imageDataUri;
+                originalPreview.classList.add('show');
+                
+                // Auto-crop with face detection
+                faceStatus.className = 'face-status loading';
+                faceStatusText.textContent = '🪄 Auto-cropping with face detection...';
+                
+                const croppedDataUri = await detectAndCropFace(imageDataUri);
+                capturedImageData = croppedDataUri;
+                
+                croppedPreview.src = croppedDataUri;
+                croppedPreview.classList.add('show');
+                
+                faceStatus.className = 'face-status detecting';
+                faceStatusText.textContent = '✅ Photo captured and auto-cropped!';
+                
+                startCameraBtn.style.display = 'inline-flex';
+                retakeBtn.style.display = 'inline-flex';
+                downloadBtn.style.display = 'inline-flex';
+                
+            } catch (error) {
+                console.error('Error capturing photo:', error);
+                alert('Failed to capture photo. Please try again.');
+            }
+        }
+        
+        // Retake photo
+        function retakePhoto() {
+            capturedImageData = null;
+            originalPreview.src = '';
+            croppedPreview.src = '';
+            originalPreview.classList.remove('show');
+            croppedPreview.classList.remove('show');
+            startCameraBtn.style.display = 'inline-flex';
+            retakeBtn.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            startCamera();
+        }
+        
+        // Download photo
+        function downloadPhoto() {
+            if (!capturedImageData) {
+                alert('No photo to download.');
+                return;
+            }
+            
+            const link = document.createElement('a');
+            link.download = 'headshot_' + Date.now() + '.jpg';
+            link.href = capturedImageData;
+            link.click();
+        }
+        
+        // Handle file upload
+        fileInput.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 5242880) {
+                alert('File size exceeds 5MB limit.');
+                e.target.value = '';
+                return;
+            }
+            
+            fileName.textContent = file.name;
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const imageDataUri = e.target.result;
+                
+                // Show original
+                originalPreview.src = imageDataUri;
+                originalPreview.classList.add('show');
+                
+                // Auto-crop with face detection
+                faceStatus.className = 'face-status loading';
+                faceStatusText.textContent = '🪄 Auto-cropping with face detection...';
+                
+                await loadFaceApiModels();
+                const croppedDataUri = await detectAndCropFace(imageDataUri);
+                capturedImageData = croppedDataUri;
+                
+                croppedPreview.src = croppedDataUri;
+                croppedPreview.classList.add('show');
+                
+                faceStatus.className = 'face-status detecting';
+                faceStatusText.textContent = '✅ Image uploaded and auto-cropped!';
+                
+                downloadBtn.style.display = 'inline-flex';
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        // Event listeners
+        startCameraBtn.addEventListener('click', startCamera);
+        captureBtn.addEventListener('click', capturePhoto);
+        retakeBtn.addEventListener('click', retakePhoto);
+        downloadBtn.addEventListener('click', downloadPhoto);
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            stopCamera();
+        });
+        
+        // Load models on page load
+        window.addEventListener('load', async () => {
+            await loadFaceApiModels();
+        });
+    </script>
+</body>
+</html>
+
+
+
